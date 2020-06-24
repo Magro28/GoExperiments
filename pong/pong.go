@@ -18,7 +18,7 @@ type pos struct {
 
 type ball struct {
 	pos
-	radius int
+	radius float32
 	xv     float32
 	yv     float32
 	color
@@ -28,7 +28,7 @@ func (ball *ball) draw(pixels []byte) {
 	for y := -ball.radius; y < ball.radius; y++ {
 		for x := -ball.radius; x < ball.radius; x++ {
 			if x*x+y*y < ball.radius*ball.radius {
-				setPixel(int(ball.x)+x, int(ball.y)+y, ball.color, pixels)
+				setPixel(int(ball.x+x), int(ball.y+y), ball.color, pixels)
 			}
 		}
 	}
@@ -39,24 +39,24 @@ func (ball *ball) update(leftPaddle *paddle, rightPaddle *paddle) {
 	ball.y += ball.yv
 
 	//bouncing of the top and bottom
-	if int(ball.y)-ball.radius < 0 || int(ball.y)+ball.radius > winHeight {
+	if ball.y-ball.radius < 0 || ball.y+ball.radius > float32(winHeight) {
 		ball.yv = -ball.yv
 	}
 
-	if int(ball.x)-ball.radius < 0 || int(ball.x)+ball.radius > winWidth {
+	if ball.x-ball.radius < 0 || ball.x+ball.radius > float32(winWidth) {
 		ball.x = 300
 		ball.y = 300
 	}
 
 	//left paddle collision
-	if int(ball.x) < int(leftPaddle.x)+int(leftPaddle.w/2) {
-		if int(ball.y) > int(leftPaddle.y)-int(leftPaddle.h/2) && int(ball.y) < int(leftPaddle.y)+int(leftPaddle.h/2) {
+	if ball.x < leftPaddle.x+leftPaddle.w/2 {
+		if ball.y > leftPaddle.y-leftPaddle.h/2 && ball.y < leftPaddle.y+leftPaddle.h/2 {
 			ball.xv = -ball.xv
 		}
 	}
 	//right paddle collision
-	if int(ball.x) > int(rightPaddle.x)-int(rightPaddle.w/2) {
-		if int(ball.y) > int(rightPaddle.y)-int(rightPaddle.h/2) && int(ball.y) < int(rightPaddle.y)+int(rightPaddle.h/2) {
+	if ball.x > rightPaddle.x-rightPaddle.w/2 {
+		if ball.y > rightPaddle.y-rightPaddle.h/2 && ball.y < rightPaddle.y+rightPaddle.h/2 {
 			ball.xv = -ball.xv
 		}
 	}
@@ -64,18 +64,18 @@ func (ball *ball) update(leftPaddle *paddle, rightPaddle *paddle) {
 
 type paddle struct {
 	pos
-	w int
-	h int
+	w float32
+	h float32
 	color
 }
 
 func (paddle *paddle) draw(pixels []byte) {
-	startX := int(paddle.x) - paddle.w/2
-	startY := int(paddle.y) - paddle.h/2
+	startX := paddle.x - paddle.w/2
+	startY := paddle.y - paddle.h/2
 
-	for y := 0; y < paddle.h; y++ {
-		for x := 0; x < paddle.w; x++ {
-			setPixel(startX+x, startY+y, paddle.color, pixels)
+	for y := 0; y < int(paddle.h); y++ {
+		for x := 0; x < int(paddle.w); x++ {
+			setPixel(int(startX+float32(x)), int(startY+float32(y)), paddle.color, pixels)
 		}
 	}
 }
