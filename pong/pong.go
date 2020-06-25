@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"math"
 	"time"
 
 	"github.com/veandco/go-sdl2/sdl"
@@ -89,10 +90,14 @@ func (ball *ball) update(leftPaddle *paddle, rightPaddle *paddle, elapsedTime fl
 	if ball.x < 0 {
 		rightPaddle.score++
 		ball.pos = getCenter()
+		ball.xv = -400
+		ball.yv = 400
 		state = start
 	} else if ball.x > float32(winWidth) {
 		leftPaddle.score++
 		ball.pos = getCenter()
+		ball.xv = 400
+		ball.yv = -400
 		state = start
 	}
 
@@ -166,12 +171,20 @@ func (paddle *paddle) draw(pixels []byte) {
 	drawNumber(pos{numX, 35}, paddle.color, 10, paddle.score, pixels)
 }
 
-func (paddle *paddle) update(keyState []uint8, elapsedTime float32) {
+func (paddle *paddle) update(keyState []uint8, controllerAxis int16, elapsedTime float32) {
 	if keyState[sdl.SCANCODE_UP] != 0 {
 		paddle.y -= paddle.speed * elapsedTime
 	}
 	if keyState[sdl.SCANCODE_DOWN] != 0 {
 		paddle.y += paddle.speed * elapsedTime
+	}
+
+	//analog stick movement
+	//dead point < 1500
+	if math.Abs(float64(controllerAxis)) > 1500 {
+		//calculate percentage of analog stick press
+		pct := float32(controllerAxis) / 32767.0
+		paddle.y += paddle.speed * pct * elapsedTime
 	}
 }
 
@@ -228,6 +241,12 @@ func main() {
 	}
 	defer tex.Destroy()
 
+	var controllerHandlers []*sdl.GameController
+	for i := 0; i < sdl.NumJoysticks(); i++ {
+		controllerHandlers = append(controllerHandlers, sdl.GameControllerOpen(i))
+		defer controllerHandlers[i].Close()
+	}
+
 	pixels := make([]byte, winWidth*winHeight*4)
 
 	player1 := paddle{pos{50, 100}, 20, 100, color{255, 255, 255}, 300, 0}
@@ -241,7 +260,7 @@ func main() {
 	//framerate should be same for each frame
 	var frameStart time.Time
 	var elapsedTime float32
-
+	var controllerAxis int16
 	// OSX requires that you consume events for windows to open and work properly
 	for {
 		frameStart = time.Now()
@@ -252,8 +271,15 @@ func main() {
 			}
 		}
 
+		//get controller input
+		for _, controller := range controllerHandlers {
+			if controller != nil {
+				controllerAxis = controller.Joystick().Axis(sdl.CONTROLLER_AXIS_LEFTY)
+			}
+		}
+
 		if state == play {
-			player1.update(keyState, elapsedTime)
+			player1.update(keyState, controllerAxis, elapsedTime)
 			player2.aiUpdate(&ball, elapsedTime)
 			ball.update(&player1, &player2, elapsedTime)
 		} else if state == start {
@@ -273,7 +299,7 @@ func main() {
 		tex.Update(nil, pixels, winWidth*4)
 		renderer.Copy(tex, nil, nil)
 		renderer.Present()
-		fmt.Println(player2.score)
+		fmt.Println(controllerAxis)
 		elapsedTime = float32(time.Since(frameStart).Seconds())
 		//max 200 fps
 		if elapsedTime < 0.005 {
