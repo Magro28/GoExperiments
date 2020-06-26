@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"math"
+	"math/rand"
 	"time"
 
 	"github.com/veandco/go-sdl2/sdl"
@@ -119,7 +120,6 @@ func (ball *ball) update(leftPaddle *paddle, rightPaddle *paddle, elapsedTime fl
 			ball.xv = -ball.xv
 			ball.yv = (ball.yv + float32(xyModifier))
 
-			fmt.Println("LeftPaddle ", xyModifier, ball.yv)
 			//set ball outside of paddle
 			ball.x = leftPaddle.x + leftPaddle.w/2.0 + ball.radius
 		}
@@ -136,10 +136,15 @@ func (ball *ball) update(leftPaddle *paddle, rightPaddle *paddle, elapsedTime fl
 			ball.xv = -ball.xv
 			ball.yv = (ball.yv + float32(xyModifier))
 
-			fmt.Println("RightPaddle ", xyModifier, ball.yv)
 			//set ball outside of paddle
 			ball.x = rightPaddle.x - rightPaddle.w/2.0 - ball.radius
 		}
+
+	}
+
+	//prevend laser balls
+	if ball.yv > 1000 {
+		ball.yv = 1000
 	}
 }
 
@@ -213,7 +218,11 @@ func (paddle *paddle) update(keyState []uint8, controllerAxis int16, elapsedTime
 }
 
 func (paddle *paddle) aiUpdate(ball *ball, elapsedTime float32) {
-	paddle.y = ball.y
+	if paddle.y < ball.y {
+		paddle.y += paddle.speed * elapsedTime
+	} else {
+		paddle.y -= paddle.speed * elapsedTime
+	}
 }
 
 func setPixel(x, y int, c color, pixels []byte) {
@@ -271,12 +280,15 @@ func main() {
 		defer controllerHandlers[i].Close()
 	}
 
+	//initialize randomizer
+	rand.Seed(time.Now().UnixNano())
+
 	pixels := make([]byte, winWidth*winHeight*4)
 
-	player1 := paddle{pos{50, 100}, 20, 100, color{255, 255, 255}, 300, 0}
-	player2 := paddle{pos{float32(winWidth - 50), 100}, 20, 100, color{255, 255, 255}, 300, 0}
+	player1 := paddle{pos{50, 100}, 20, 100, color{0, 0, 255}, 300, 0}
+	player2 := paddle{pos{float32(winWidth - 50), 100}, 20, 100, color{255, 0, 0}, 300, 0}
 
-	ball := ball{getCenter(), 20, 400, 400, color{255, 255, 255}}
+	ball := ball{getCenter(), 20, 400, 400, color{0, 255, 0}}
 
 	//Keyboard Inputs Array
 	keyState := sdl.GetKeyboardState()
@@ -307,8 +319,20 @@ func main() {
 			player2.aiUpdate(&ball, elapsedTime)
 			ball.update(&player1, &player2, elapsedTime)
 		} else if state == start {
+
+			//win effect
+			if player1.score == 3 {
+				player1.color = color{byte(rand.Int() * 255), byte(rand.Int() * 255), byte(rand.Int() * 255)}
+			} else if player2.score == 3 {
+				player2.color = color{byte(rand.Int() * 255), byte(rand.Int() * 255), byte(rand.Int() * 255)}
+
+			}
+
+			//continue game
 			if keyState[sdl.SCANCODE_SPACE] != 0 {
 				if player1.score == 3 || player2.score == 3 {
+					player1.color = color{0, 0, 255}
+					player2.color = color{255, 0, 0}
 					player1.score = 0
 					player2.score = 0
 				}
