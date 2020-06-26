@@ -83,28 +83,43 @@ func (ball *ball) update(leftPaddle *paddle, rightPaddle *paddle, elapsedTime fl
 	ball.y += ball.yv * elapsedTime
 
 	//bouncing of the top and bottom
-	if ball.y-ball.radius < 0 || ball.y+ball.radius > float32(winHeight) {
+	if ball.y-ball.radius < 0 {
 		ball.yv = -ball.yv
+		//set ball outside of top
+		ball.y = ball.radius
+	} else if ball.y+ball.radius > float32(winHeight) {
+		ball.yv = -ball.yv
+		//set ball outside of bottom
+		ball.y -= ball.radius
 	}
 
 	if ball.x < 0 {
 		rightPaddle.score++
 		ball.pos = getCenter()
 		ball.xv = -400
-		ball.yv = 400
+		ball.yv = 0
 		state = start
 	} else if ball.x > float32(winWidth) {
 		leftPaddle.score++
 		ball.pos = getCenter()
 		ball.xv = 400
-		ball.yv = -400
+		ball.yv = 0
 		state = start
 	}
 
 	//left paddle collision
 	if ball.x-ball.radius < leftPaddle.x+leftPaddle.w/2 {
 		if ball.y > leftPaddle.y-leftPaddle.h/2 && ball.y < leftPaddle.y+leftPaddle.h/2 {
+			xyModifier := float32(0.0)
+			if ball.y > leftPaddle.y-leftPaddle.h/2 {
+				xyModifier = (ball.y/leftPaddle.y - 1) * 1000
+			} else {
+				xyModifier = (ball.y / leftPaddle.y) * 1000
+			}
 			ball.xv = -ball.xv
+			ball.yv = (ball.yv + float32(xyModifier))
+
+			fmt.Println("LeftPaddle ", xyModifier, ball.yv)
 			//set ball outside of paddle
 			ball.x = leftPaddle.x + leftPaddle.w/2.0 + ball.radius
 		}
@@ -112,7 +127,16 @@ func (ball *ball) update(leftPaddle *paddle, rightPaddle *paddle, elapsedTime fl
 	//right paddle collision
 	if ball.x+ball.radius > rightPaddle.x-rightPaddle.w/2 {
 		if ball.y > rightPaddle.y-rightPaddle.h/2 && ball.y < rightPaddle.y+rightPaddle.h/2 {
+			xyModifier := float32(0.0)
+			if ball.y > rightPaddle.y-rightPaddle.h/2 {
+				xyModifier = (ball.y/rightPaddle.y - 1) * 1000
+			} else {
+				xyModifier = (ball.y / rightPaddle.y) * 1000
+			}
 			ball.xv = -ball.xv
+			ball.yv = (ball.yv + float32(xyModifier))
+
+			fmt.Println("RightPaddle ", xyModifier, ball.yv)
 			//set ball outside of paddle
 			ball.x = rightPaddle.x - rightPaddle.w/2.0 - ball.radius
 		}
@@ -257,7 +281,7 @@ func main() {
 	//Keyboard Inputs Array
 	keyState := sdl.GetKeyboardState()
 
-	//framerate should be same for each frame
+	//framerate should be same for each cpu
 	var frameStart time.Time
 	var elapsedTime float32
 	var controllerAxis int16
@@ -299,7 +323,6 @@ func main() {
 		tex.Update(nil, pixels, winWidth*4)
 		renderer.Copy(tex, nil, nil)
 		renderer.Present()
-		fmt.Println(controllerAxis)
 		elapsedTime = float32(time.Since(frameStart).Seconds())
 		//max 200 fps
 		if elapsedTime < 0.005 {
