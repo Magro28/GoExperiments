@@ -1,7 +1,5 @@
 package main
 
-//SDL initialisation code with colors ;)
-
 import (
 	"fmt"
 
@@ -9,6 +7,41 @@ import (
 )
 
 const winWidth, winHeight int = 800, 600
+
+func rescaleAndDraw(noise []float32, min, max float32, pixels []byte) {
+	scale := 255 / (max - min)
+	offset := min * scale
+
+	for i := range noise {
+		noise[i] = noise[i]*scale - offset
+		b := byte(noise[i])
+		pixels[i*4] = b
+		pixels[i*4+1] = b
+		pixels[i*4+2] = b
+	}
+}
+
+func makeNoise(pixels []byte) {
+
+	noise := make([]float32, winWidth*winHeight)
+
+	i := 0
+	min := float32(9999.0)
+	max := float32(-9999.9)
+	for y := 0; y < winHeight; y++ {
+		for x := 0; x < winWidth; x++ {
+			noise[i] = snoise2(float32(x)/100, float32(y)/100)
+			if noise[i] < min {
+				min = noise[i]
+			} else if noise[i] > max {
+				max = noise[i]
+			}
+			i++
+		}
+	}
+
+	rescaleAndDraw(noise, min, max, pixels)
+}
 
 type color struct {
 	r, g, b byte
@@ -58,11 +91,7 @@ func main() {
 
 	pixels := make([]byte, winWidth*winHeight*4)
 
-	for y := 0; y < winHeight; y++ {
-		for x := 0; x < winWidth; x++ {
-			setPixel(x, y, color{byte(x % 255), byte(y % 255), 0}, pixels)
-		}
-	}
+	makeNoise(pixels)
 
 	tex.Update(nil, pixels, winWidth*4)
 	renderer.Copy(tex, nil, nil)
