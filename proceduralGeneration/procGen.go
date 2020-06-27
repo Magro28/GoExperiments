@@ -67,7 +67,7 @@ func main() {
 	}
 	defer sdl.Quit()
 
-	window, err := sdl.CreateWindow("Testing SDL2", sdl.WINDOWPOS_UNDEFINED, sdl.WINDOWPOS_UNDEFINED,
+	window, err := sdl.CreateWindow("Procedural Generation", sdl.WINDOWPOS_UNDEFINED, sdl.WINDOWPOS_UNDEFINED,
 		int32(winWidth), int32(winHeight), sdl.WINDOW_SHOWN)
 	if err != nil {
 		fmt.Println(err)
