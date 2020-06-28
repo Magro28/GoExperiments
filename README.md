@@ -1,6 +1,7 @@
 # GoExperiments
+Here I will just experiment with the Go language. Creating small games, algorithms or things I find generally interesting.
 
-## SDL
+## SDL Template
 SDL is a very low level graphics library which I use for small prototype games
 
 ## Prodecural Generation
