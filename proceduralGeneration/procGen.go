@@ -43,12 +43,29 @@ func getTripleGradient(c1, c2, c3, c4, c5, c6 color) []color {
 	result := make([]color, 256)
 	for i := range result {
 		pct := float32(i) / float32(255)
-		if pct < 0.333 {
+		if pct < 0.65 {
 			result[i] = colorLerp(c1, c2, pct*float32(2))
-		} else if pct >= 0.333 && pct < 0.666 {
+		} else if pct >= 0.65 && pct < 0.70 {
 			result[i] = colorLerp(c3, c4, pct*float32(1.5)-float32(0.5))
 		} else {
 			result[i] = colorLerp(c5, c6, pct*float32(1.5)-float32(0.5))
+		}
+	}
+	return result
+}
+
+func getQuadrupleGradient(c1, c2, c3, c4, c5, c6, c7, c8 color) []color {
+	result := make([]color, 256)
+	for i := range result {
+		pct := float32(i) / float32(255)
+		if pct < 0.65 {
+			result[i] = colorLerp(c1, c2, pct*float32(2))
+		} else if pct >= 0.65 && pct < 0.70 {
+			result[i] = colorLerp(c3, c4, pct*float32(1.5)-float32(0.5))
+		} else if pct >= 0.7 && pct < 0.90 {
+			result[i] = colorLerp(c5, c6, pct*float32(1.5)-float32(0.5))
+		} else {
+			result[i] = colorLerp(c7, c8, pct*float32(3.5)-float32(0))
 		}
 	}
 	return result
@@ -134,9 +151,11 @@ func makeNoise(pixels []byte, frequency, lacunarity, gain float32, octaves int, 
 	if colormode <= 1 {
 		gradient = getGradient(color{255, 0, 0}, color{255, 242, 0})
 	} else if colormode == 2 {
-		gradient = getDualGradient(color{0, 0, 175}, color{80, 160, 244}, color{12, 192, 75}, color{255, 255, 255})
+		gradient = getDualGradient(color{0, 0, 175}, color{80, 100, 200}, color{12, 192, 75}, color{255, 255, 255})
+	} else if colormode == 3 {
+		gradient = getTripleGradient(color{0, 0, 100}, color{80, 100, 200}, color{210, 210, 0}, color{100, 80, 0}, color{50, 160, 20}, color{0, 80, 10})
 	} else {
-		gradient = getTripleGradient(color{0, 0, 175}, color{80, 160, 244}, color{255, 242, 0}, color{200, 180, 0}, color{10, 100, 20}, color{100, 255, 100})
+		gradient = getQuadrupleGradient(color{0, 0, 100}, color{80, 100, 200}, color{210, 210, 0}, color{100, 80, 0}, color{50, 160, 20}, color{0, 80, 10}, color{100, 100, 100}, color{250, 250, 250})
 	}
 	rescaleAndDraw(noise, min, max, gradient, pixels)
 }
@@ -194,7 +213,7 @@ func main() {
 	lacunarity := float32(3.0)
 	octaves := 3
 	algorithm := 1
-	colormode := 3
+	colormode := 4
 	keyState := sdl.GetKeyboardState()
 	makeNoise(pixels, frequency, lacunarity, gain, octaves, colormode, algorithm)
 	for {
@@ -229,8 +248,8 @@ func main() {
 			colormode = colormode + 1*mult
 			if colormode < 1 {
 				colormode = 1
-			} else if colormode > 3 {
-				colormode = 3
+			} else if colormode > 4 {
+				colormode = 4
 			}
 			makeNoise(pixels, frequency, lacunarity, gain, octaves, colormode, algorithm)
 		}
