@@ -39,6 +39,21 @@ func getDualGradient(c1, c2, c3, c4 color) []color {
 	return result
 }
 
+func getTripleGradient(c1, c2, c3, c4, c5, c6 color) []color {
+	result := make([]color, 256)
+	for i := range result {
+		pct := float32(i) / float32(255)
+		if pct < 0.333 {
+			result[i] = colorLerp(c1, c2, pct*float32(2))
+		} else if pct >= 0.333 && pct < 0.666 {
+			result[i] = colorLerp(c3, c4, pct*float32(1.5)-float32(0.5))
+		} else {
+			result[i] = colorLerp(c5, c6, pct*float32(1.5)-float32(0.5))
+		}
+	}
+	return result
+}
+
 func clamp(min, max, v int) int {
 	if v < min {
 		v = min
@@ -74,17 +89,37 @@ func fbm2(x, y, frequency, lacunarity, gain float32, octaves int) float32 {
 	return sum
 }
 
-func makeNoise(pixels []byte, frequency, lacunarity, gain float32, octaves int) {
+//turbulence noise
+func turbulence(x, y, frequency, lacunarity, gain float32, octaves int) float32 {
+	var sum float32
+	amplitude := float32(1)
+
+	for i := 0; i < octaves; i++ {
+		f := snoise2(x*frequency, y*frequency) * amplitude
+		if f < 0 {
+			f = -1.0 * f
+		}
+		sum += f
+		frequency = frequency * lacunarity
+		amplitude = amplitude * gain
+	}
+	return sum
+}
+
+func makeNoise(pixels []byte, frequency, lacunarity, gain float32, octaves int, colormode int, algorithm int) {
 
 	noise := make([]float32, winWidth*winHeight)
-	fmt.Println("frequency", frequency, "lacunarity", lacunarity, "gain", gain, "octaves", octaves)
+	fmt.Println("frequency", frequency, "lacunarity", lacunarity, "gain", gain, "octaves", octaves, "colormode", colormode, "algorithm", algorithm)
 	i := 0
 	min := float32(9999.0)
 	max := float32(-9999.9)
 	for y := 0; y < winHeight; y++ {
 		for x := 0; x < winWidth; x++ {
-			noise[i] = fbm2(float32(x), float32(y), frequency, lacunarity, gain, octaves)
-
+			if algorithm <= 1 {
+				noise[i] = fbm2(float32(x), float32(y), frequency, lacunarity, gain, octaves)
+			} else {
+				noise[i] = turbulence(float32(x), float32(y), frequency, lacunarity, gain, octaves)
+			}
 			if noise[i] < min { //water
 				min = noise[i]
 
@@ -94,7 +129,15 @@ func makeNoise(pixels []byte, frequency, lacunarity, gain float32, octaves int) 
 			i++
 		}
 	}
-	gradient := getDualGradient(color{0, 0, 175}, color{80, 160, 244}, color{12, 192, 75}, color{255, 255, 255})
+
+	var gradient []color
+	if colormode <= 1 {
+		gradient = getGradient(color{255, 0, 0}, color{255, 242, 0})
+	} else if colormode == 2 {
+		gradient = getDualGradient(color{0, 0, 175}, color{80, 160, 244}, color{12, 192, 75}, color{255, 255, 255})
+	} else {
+		gradient = getTripleGradient(color{0, 0, 175}, color{80, 160, 244}, color{255, 242, 0}, color{200, 180, 0}, color{10, 100, 20}, color{100, 255, 100})
+	}
 	rescaleAndDraw(noise, min, max, gradient, pixels)
 }
 
@@ -150,8 +193,10 @@ func main() {
 	gain := float32(0.2)
 	lacunarity := float32(3.0)
 	octaves := 3
+	algorithm := 1
+	colormode := 3
 	keyState := sdl.GetKeyboardState()
-	makeNoise(pixels, frequency, lacunarity, gain, octaves)
+	makeNoise(pixels, frequency, lacunarity, gain, octaves, colormode, algorithm)
 	for {
 		for event := sdl.PollEvent(); event != nil; event = sdl.PollEvent() {
 			switch event.(type) {
@@ -159,27 +204,44 @@ func main() {
 				return
 			}
 		}
-
 		mult := 1
 		if keyState[sdl.SCANCODE_LSHIFT] != 0 || keyState[sdl.SCANCODE_RSHIFT] != 0 {
 			mult = -1
-			makeNoise(pixels, frequency, lacunarity, gain, octaves)
+			makeNoise(pixels, frequency, lacunarity, gain, octaves, colormode, algorithm)
 		}
 		if keyState[sdl.SCANCODE_O] != 0 {
 			octaves = octaves + 1*mult
-			makeNoise(pixels, frequency, lacunarity, gain, octaves)
+			makeNoise(pixels, frequency, lacunarity, gain, octaves, colormode, algorithm)
 		}
 		if keyState[sdl.SCANCODE_F] != 0 {
 			frequency = frequency + 0.001*float32(mult)
-			makeNoise(pixels, frequency, lacunarity, gain, octaves)
+			makeNoise(pixels, frequency, lacunarity, gain, octaves, colormode, algorithm)
 		}
 		if keyState[sdl.SCANCODE_G] != 0 {
 			gain = gain + 0.1*float32(mult)
-			makeNoise(pixels, frequency, lacunarity, gain, octaves)
+			makeNoise(pixels, frequency, lacunarity, gain, octaves, colormode, algorithm)
 		}
 		if keyState[sdl.SCANCODE_L] != 0 {
 			lacunarity = lacunarity + 0.1*float32(mult)
-			makeNoise(pixels, frequency, lacunarity, gain, octaves)
+			makeNoise(pixels, frequency, lacunarity, gain, octaves, colormode, algorithm)
+		}
+		if keyState[sdl.SCANCODE_C] != 0 {
+			colormode = colormode + 1*mult
+			if colormode < 1 {
+				colormode = 1
+			} else if colormode > 3 {
+				colormode = 3
+			}
+			makeNoise(pixels, frequency, lacunarity, gain, octaves, colormode, algorithm)
+		}
+		if keyState[sdl.SCANCODE_A] != 0 {
+			algorithm = algorithm + 1*mult
+			if algorithm < 1 {
+				algorithm = 1
+			} else if algorithm > 2 {
+				algorithm = 2
+			}
+			makeNoise(pixels, frequency, lacunarity, gain, octaves, colormode, algorithm)
 		}
 
 		tex.Update(nil, pixels, winWidth*4)
