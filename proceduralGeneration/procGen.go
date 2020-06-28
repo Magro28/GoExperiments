@@ -246,20 +246,12 @@ func main() {
 		}
 		if keyState[sdl.SCANCODE_C] != 0 {
 			colormode = colormode + 1*mult
-			if colormode < 1 {
-				colormode = 1
-			} else if colormode > 4 {
-				colormode = 4
-			}
+			colormode = clamp(1, 4, colormode)
 			makeNoise(pixels, frequency, lacunarity, gain, octaves, colormode, algorithm)
 		}
 		if keyState[sdl.SCANCODE_A] != 0 {
 			algorithm = algorithm + 1*mult
-			if algorithm < 1 {
-				algorithm = 1
-			} else if algorithm > 2 {
-				algorithm = 2
-			}
+			algorithm = clamp(1, 2, algorithm)
 			makeNoise(pixels, frequency, lacunarity, gain, octaves, colormode, algorithm)
 		}
 
