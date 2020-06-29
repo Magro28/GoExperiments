@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"runtime"
 	"sync"
 	"time"
 
@@ -134,7 +135,7 @@ func makeNoise(pixels []byte, frequency, lacunarity, gain float32, octaves int, 
 	max := float32(-9999.9)
 
 	//specify routines, waitgroup and batchsize after logical CPU cores
-	numRoutines := 100 //runtime.NumCPU()
+	numRoutines := runtime.NumCPU()
 	var wg sync.WaitGroup
 	//wait for x routines to finish
 	wg.Add(numRoutines)

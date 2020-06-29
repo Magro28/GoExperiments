@@ -244,7 +244,6 @@ func clear(pixels []byte) {
 
 func main() {
 
-	// Added after EP06 to address macosx issues
 	err := sdl.Init(sdl.INIT_EVERYTHING)
 	if err != nil {
 		fmt.Println(err)
