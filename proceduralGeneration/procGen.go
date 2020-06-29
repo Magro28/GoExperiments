@@ -2,6 +2,8 @@ package main
 
 import (
 	"fmt"
+	"sync"
+	"time"
 
 	"github.com/veandco/go-sdl2/sdl"
 )
@@ -123,29 +125,48 @@ func turbulence(x, y, frequency, lacunarity, gain float32, octaves int) float32 
 	return sum
 }
 
-func makeNoise(pixels []byte, frequency, lacunarity, gain float32, octaves int, colormode int, algorithm int) {
-
+func makeNoise(pixels []byte, frequency, lacunarity, gain float32, octaves int, colormode int, algorithm int, w, h int) {
+	startTime := time.Now()
 	noise := make([]float32, winWidth*winHeight)
 	fmt.Println("frequency", frequency, "lacunarity", lacunarity, "gain", gain, "octaves", octaves, "colormode", colormode, "algorithm", algorithm)
-	i := 0
+
 	min := float32(9999.0)
 	max := float32(-9999.9)
-	for y := 0; y < winHeight; y++ {
-		for x := 0; x < winWidth; x++ {
-			if algorithm <= 1 {
-				noise[i] = fbm2(float32(x), float32(y), frequency, lacunarity, gain, octaves)
-			} else {
-				noise[i] = turbulence(float32(x), float32(y), frequency, lacunarity, gain, octaves)
-			}
-			if noise[i] < min { //water
-				min = noise[i]
 
-			} else if noise[i] > max { //islands
-				max = noise[i]
+	//specify routines, waitgroup and batchsize after logical CPU cores
+	numRoutines := 100 //runtime.NumCPU()
+	var wg sync.WaitGroup
+	//wait for x routines to finish
+	wg.Add(numRoutines)
+	batchSize := len(noise) / numRoutines
+	for i := 0; i < numRoutines; i++ {
+		//start new thread
+		go func(i int) {
+			//defer executes after surrounding block
+			defer wg.Done()
+			start := i * batchSize
+			end := start + batchSize - 1
+			for j := start; j < end; j++ {
+				x := j % w
+				y := (j - x) / h
+				if algorithm <= 1 {
+					noise[j] = fbm2(float32(x), float32(y), frequency, lacunarity, gain, octaves)
+				} else {
+					noise[j] = turbulence(float32(x), float32(y), frequency, lacunarity, gain, octaves)
+				}
+				if noise[j] < min { //water
+					min = noise[j]
+
+				} else if noise[j] > max { //islands
+					max = noise[j]
+				}
 			}
-			i++
-		}
+		}(i)
 	}
+	//wait for all go routines to finish
+	wg.Wait()
+	elapseTime := time.Since(startTime).Seconds() * 1000.0
+	fmt.Println("Elapsed Time:", elapseTime)
 
 	var gradient []color
 	if colormode <= 1 {
@@ -215,7 +236,7 @@ func main() {
 	algorithm := 1
 	colormode := 4
 	keyState := sdl.GetKeyboardState()
-	makeNoise(pixels, frequency, lacunarity, gain, octaves, colormode, algorithm)
+	makeNoise(pixels, frequency, lacunarity, gain, octaves, colormode, algorithm, winWidth, winHeight)
 	for {
 		for event := sdl.PollEvent(); event != nil; event = sdl.PollEvent() {
 			switch event.(type) {
@@ -226,33 +247,33 @@ func main() {
 		mult := 1
 		if keyState[sdl.SCANCODE_LSHIFT] != 0 || keyState[sdl.SCANCODE_RSHIFT] != 0 {
 			mult = -1
-			makeNoise(pixels, frequency, lacunarity, gain, octaves, colormode, algorithm)
+			makeNoise(pixels, frequency, lacunarity, gain, octaves, colormode, algorithm, winWidth, winHeight)
 		}
 		if keyState[sdl.SCANCODE_O] != 0 {
 			octaves = octaves + 1*mult
-			makeNoise(pixels, frequency, lacunarity, gain, octaves, colormode, algorithm)
+			makeNoise(pixels, frequency, lacunarity, gain, octaves, colormode, algorithm, winWidth, winHeight)
 		}
 		if keyState[sdl.SCANCODE_F] != 0 {
 			frequency = frequency + 0.001*float32(mult)
-			makeNoise(pixels, frequency, lacunarity, gain, octaves, colormode, algorithm)
+			makeNoise(pixels, frequency, lacunarity, gain, octaves, colormode, algorithm, winWidth, winHeight)
 		}
 		if keyState[sdl.SCANCODE_G] != 0 {
 			gain = gain + 0.1*float32(mult)
-			makeNoise(pixels, frequency, lacunarity, gain, octaves, colormode, algorithm)
+			makeNoise(pixels, frequency, lacunarity, gain, octaves, colormode, algorithm, winWidth, winHeight)
 		}
 		if keyState[sdl.SCANCODE_L] != 0 {
 			lacunarity = lacunarity + 0.1*float32(mult)
-			makeNoise(pixels, frequency, lacunarity, gain, octaves, colormode, algorithm)
+			makeNoise(pixels, frequency, lacunarity, gain, octaves, colormode, algorithm, winWidth, winHeight)
 		}
 		if keyState[sdl.SCANCODE_C] != 0 {
 			colormode = colormode + 1*mult
 			colormode = clamp(1, 4, colormode)
-			makeNoise(pixels, frequency, lacunarity, gain, octaves, colormode, algorithm)
+			makeNoise(pixels, frequency, lacunarity, gain, octaves, colormode, algorithm, winWidth, winHeight)
 		}
 		if keyState[sdl.SCANCODE_A] != 0 {
 			algorithm = algorithm + 1*mult
 			algorithm = clamp(1, 2, algorithm)
-			makeNoise(pixels, frequency, lacunarity, gain, octaves, colormode, algorithm)
+			makeNoise(pixels, frequency, lacunarity, gain, octaves, colormode, algorithm, winWidth, winHeight)
 		}
 
 		tex.Update(nil, pixels, winWidth*4)
