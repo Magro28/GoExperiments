@@ -130,7 +130,7 @@ func makeNoise(pixels []byte, frequency, lacunarity, gain float32, octaves int, 
 	startTime := time.Now()
 	noise := make([]float32, winWidth*winHeight)
 	fmt.Println("frequency", frequency, "lacunarity", lacunarity, "gain", gain, "octaves", octaves, "colormode", colormode, "algorithm", algorithm)
-
+	var mutex = &sync.Mutex{}
 	min := float32(9999.0)
 	max := float32(-9999.9)
 
@@ -155,12 +155,17 @@ func makeNoise(pixels []byte, frequency, lacunarity, gain float32, octaves int, 
 				} else {
 					noise[j] = turbulence(float32(x), float32(y), frequency, lacunarity, gain, octaves)
 				}
-				if noise[j] < min { //water
-					min = noise[j]
+				if noise[j] < min || noise[j] > max {
+					mutex.Lock()
+					if noise[j] < min {
+						min = noise[j]
 
-				} else if noise[j] > max { //islands
-					max = noise[j]
+					} else if noise[j] > max {
+						max = noise[j]
+					}
+					mutex.Unlock()
 				}
+
 			}
 		}(i)
 	}
