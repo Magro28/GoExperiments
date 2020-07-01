@@ -4,12 +4,12 @@ Here I will just experiment with the Go language. Creating small games, algorith
 ## Prodecural Generation
 Simplex, Perlin and Fractal Noise to generate some nice landscapes.<br/>
 Use KEYS F, L, G, O, C, A to increase Frequency, Lacunarity, Gain, Octaves, Colormode and Algorithm and press SHIFT + KEY to decrease it<br/>
-![ProceduralGeneration!](docs/procGen.png)
+![ProceduralGeneration!](docs/procGen.gif)
 
 ## Pong
 Simple Pong clone to learn sdl and go game dev<br/>
 Use ARROW KEYS and SPACE to play!</br>
-![Pong!](docs/pong.png)
+![Pong!](docs/pong.gif)
 
 ## File Galaxy
 Visualizes recursivly your entered directory and draws a galaxy of planets (Planet size ~ File Size)</br>
