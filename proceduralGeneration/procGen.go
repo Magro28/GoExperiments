@@ -132,8 +132,8 @@ func makeNoise(pixels []byte, frequency, lacunarity, gain float32, octaves int, 
 	noise := make([]float32, winWidth*winHeight)
 	fmt.Println("frequency", frequency, "lacunarity", lacunarity, "gain", gain, "octaves", octaves, "colormode", colormode, "algorithm", algorithm)
 	var mutex = &sync.Mutex{}
-	min := float32(9999.0)
-	max := float32(-9999.9)
+	min := float32(math.MaxFloat32)
+	max := float32(-math.MaxFloat32)
 
 	//specify routines, waitgroup and batchsize after logical CPU cores
 	numRoutines := runtime.NumCPU()
@@ -163,18 +163,22 @@ func makeNoise(pixels []byte, frequency, lacunarity, gain float32, octaves int, 
 
 				if noise[j] < innerMin {
 					innerMin = noise[j]
+
 				} else if noise[j] > innerMax {
 					innerMax = noise[j]
 				}
 
-				mutex.Lock()
-				if innerMin < min {
-					min = innerMin
-				} else if innerMax > max {
-					max = innerMax
-				}
-				mutex.Unlock()
 			}
+
+			mutex.Lock()
+			if innerMin < min {
+				min = innerMin
+			}
+			if innerMax > max {
+				max = innerMax
+			}
+			mutex.Unlock()
+
 		}(i)
 	}
 	//wait for all go routines to finish
