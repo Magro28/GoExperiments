@@ -3,7 +3,7 @@ Here I will just experiment with the Go language. Creating small games, algorith
 
 ## Prodecural Generation
 Simplex, Perlin and Fractal Noise to generate some nice landscapes.<br/>
-Using fractal or turbulence simplex noise algorithms. Is also using go routines to calculate multithreaded with a mutex implementation to avoid race conditions. </br>
+Using fractal or turbulence simplex noise algorithms. Is also using go routines for multithreaded calculations and a mutex implementation to avoid race conditions. </br>
 Use KEYS F, L, G, O, C, A to increase Frequency, Lacunarity, Gain, Octaves, Colormode and Algorithm and press SHIFT + KEY to decrease it<br/>
 ![ProceduralGeneration!](docs/procGen.gif)
 
