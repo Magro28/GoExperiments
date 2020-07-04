@@ -9,7 +9,7 @@ Use KEYS F, L, G, O, C, A to increase Frequency, Lacunarity, Gain, Octaves, Colo
 
 ## Pong
 Simple Pong clone to learn sdl and go game dev<br/>
-Using SDL keyboard inputs and a simple collision detection implementation. </br>
+Using SDL keyboard inputs and a simple collision detection implementation. A simple AI implementation which chases the ball. </br>
 Use ARROW KEYS and SPACE to play!</br>
 ![Pong!](docs/pong.gif)
 
