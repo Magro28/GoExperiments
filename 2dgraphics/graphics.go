@@ -14,6 +14,7 @@ const winWidth, winHeight int = 800, 600
 
 type texture struct {
 	pos         pos
+	direction   int
 	pixels      []byte
 	w, h, pitch int
 }
@@ -118,7 +119,7 @@ func loadImage(imgpath string) *texture {
 			imgIndex++
 		}
 	}
-	return &texture{pos{0, 0}, imgPixels, w, h, w * 4}
+	return &texture{pos{0, 0}, 1, imgPixels, w, h, w * 4}
 }
 
 func clear(pixels []byte) {
@@ -164,12 +165,14 @@ func main() {
 	imgTex1.drawWithAlphaBlending(pixels)
 
 	imgTex2 := loadImage("Knight2.png")
-	imgTex2.pos = pos{150, 100}
+	imgTex2.pos = pos{0, 100}
 	imgTex2.drawWithAlphaBlending(pixels)
 
 	imgTex3 := loadImage("Knight3.png")
-	imgTex3.pos = pos{500, 200}
+	imgTex3.pos = pos{0, 200}
 	imgTex3.drawWithAlphaBlending(pixels)
+
+	sprites := []*texture{imgTex1, imgTex2, imgTex3}
 
 	for {
 		for event := sdl.PollEvent(); event != nil; event = sdl.PollEvent() {
@@ -177,6 +180,18 @@ func main() {
 			case *sdl.QuitEvent:
 				return
 			}
+		}
+		clear(pixels)
+
+		for i, sprite := range sprites {
+			var speed float32
+			speed = float32(i+1) / float32(3)
+			if sprite.pos.x < 0 || sprite.pos.x > float32(winWidth) || sprite.pos.y < 0 || sprite.pos.y > float32(winHeight) {
+				sprite.direction *= -1
+			}
+			sprite.pos.x = sprite.pos.x + float32(sprite.direction)*(speed)
+
+			sprite.drawWithAlphaBlending(pixels)
 		}
 
 		tex.Update(nil, pixels, winWidth*4)
