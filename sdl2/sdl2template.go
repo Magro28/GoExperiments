@@ -25,6 +25,12 @@ func setPixel(x, y int, c color, pixels []byte) {
 
 }
 
+func clear(pixels []byte) {
+	for i := range pixels {
+		pixels[i] = 0
+	}
+}
+
 func main() {
 
 	err := sdl.Init(sdl.INIT_EVERYTHING)

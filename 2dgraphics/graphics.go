@@ -13,6 +13,7 @@ import (
 const winWidth, winHeight int = 800, 600
 
 type texture struct {
+	pos         pos
 	pixels      []byte
 	w, h, pitch int
 }
@@ -55,6 +56,38 @@ func (tex *texture) draw(p pos, pixels []byte) {
 	}
 }
 
+// see https://en.wikipedia.org/wiki/Alpha_compositing
+func (tex *texture) drawWithAlphaBlending(pixels []byte) {
+	for y := 0; y < tex.h; y++ {
+		for x := 0; x < tex.w; x++ {
+			screenY := y + int(tex.pos.y)
+			screenX := x + int(tex.pos.x)
+			if screenX >= 0 && screenX < winWidth && screenY >= 0 && screenY < winHeight {
+				texIndex := y*tex.pitch + x*4
+				screenIndex := screenY*winWidth*4 + screenX*4
+
+				srcRed := int(tex.pixels[texIndex])
+				srcGreen := int(tex.pixels[texIndex+1])
+				srcBlue := int(tex.pixels[texIndex+2])
+				srcAlpha := int(tex.pixels[texIndex+3])
+
+				dstRed := int(pixels[screenIndex])
+				dstGreen := int(pixels[screenIndex+1])
+				dstBlue := int(pixels[screenIndex+2])
+
+				resultRed := (srcRed*255 + dstRed*(255-srcAlpha)) / 255
+				resultGreen := (srcGreen*255 + dstGreen*(255-srcAlpha)) / 255
+				resultBlue := (srcBlue*255 + dstBlue*(255-srcAlpha)) / 255
+
+				pixels[screenIndex] = byte(resultRed)
+				pixels[screenIndex+1] = byte(resultGreen)
+				pixels[screenIndex+2] = byte(resultBlue)
+			}
+
+		}
+	}
+}
+
 func loadImage(imgpath string) *texture {
 
 	infile, err := os.Open(imgpath)
@@ -70,7 +103,6 @@ func loadImage(imgpath string) *texture {
 
 	w := img.Bounds().Max.X
 	h := img.Bounds().Max.Y
-	fmt.Println("w,h", w, h)
 	imgPixels := make([]byte, w*h*4)
 	imgIndex := 0
 	for y := 0; y < h; y++ {
@@ -86,7 +118,13 @@ func loadImage(imgpath string) *texture {
 			imgIndex++
 		}
 	}
-	return &texture{imgPixels, w, h, w * 4}
+	return &texture{pos{0, 0}, imgPixels, w, h, w * 4}
+}
+
+func clear(pixels []byte) {
+	for i := range pixels {
+		pixels[i] = 0
+	}
 }
 
 func main() {
@@ -121,8 +159,17 @@ func main() {
 	defer tex.Destroy()
 
 	pixels := make([]byte, winWidth*winHeight*4)
-	imgTex := loadImage("Knight1.png")
-	imgTex.draw(pos{0, 0}, pixels)
+	imgTex1 := loadImage("Knight1.png")
+	imgTex1.pos = pos{0, 0}
+	imgTex1.drawWithAlphaBlending(pixels)
+
+	imgTex2 := loadImage("Knight2.png")
+	imgTex2.pos = pos{150, 100}
+	imgTex2.drawWithAlphaBlending(pixels)
+
+	imgTex3 := loadImage("Knight3.png")
+	imgTex3.pos = pos{500, 200}
+	imgTex3.drawWithAlphaBlending(pixels)
 
 	for {
 		for event := sdl.PollEvent(); event != nil; event = sdl.PollEvent() {
