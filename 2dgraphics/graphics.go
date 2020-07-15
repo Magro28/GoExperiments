@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"image/png"
 	"os"
+	"time"
 
 	"github.com/veandco/go-sdl2/sdl"
 )
@@ -175,6 +176,7 @@ func main() {
 	sprites := []*texture{imgTex1, imgTex2, imgTex3}
 
 	for {
+		frameStart := time.Now()
 		for event := sdl.PollEvent(); event != nil; event = sdl.PollEvent() {
 			switch event.(type) {
 			case *sdl.QuitEvent:
@@ -198,6 +200,13 @@ func main() {
 		renderer.Copy(tex, nil, nil)
 		renderer.Present()
 
+		elapsedTime := float32(time.Since(frameStart).Seconds() * 1000)
+		fmt.Println("ms per frame:", elapsedTime)
+		//max 200 fps
+		if elapsedTime < 5 {
+			sdl.Delay(5 - uint32(elapsedTime))
+			elapsedTime = float32(time.Since(frameStart).Seconds())
+		}
 		sdl.Delay(16)
 	}
 
