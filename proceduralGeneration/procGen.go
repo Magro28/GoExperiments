@@ -154,7 +154,7 @@ func makeNoise(pixels []byte, frequency, lacunarity, gain float32, octaves int, 
 			end := start + batchSize - 1
 			for j := start; j < end; j++ {
 				x := j % w
-				y := (j - x) / h
+				y := (j - x) / w
 				if algorithm <= 1 {
 					noise[j] = fbm2(float32(x), float32(y), frequency, lacunarity, gain, octaves)
 				} else {
