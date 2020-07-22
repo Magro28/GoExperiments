@@ -18,6 +18,7 @@ type texture struct {
 	direction   int
 	pixels      []byte
 	w, h, pitch int
+	scale       float32
 }
 
 type rgba struct {
@@ -56,6 +57,36 @@ func (tex *texture) draw(p pos, pixels []byte) {
 
 		}
 	}
+}
+
+func (tex *texture) drawScaled(scaleX, scaleY float32, pixels []byte) {
+	newWidth := int(float32(tex.w) * scaleX)
+	newHeight := int(float32(tex.h) * scaleY)
+
+	texW4 := tex.w * 4
+	for y := 0; y < newHeight; y++ {
+		fy := float32(y) / float32(newHeight) * float32(tex.h-1)
+		fyi := int(fy)
+		screenY := int(fy*scaleY) + int(tex.pos.y)
+		screenIndex := screenY*winWidth*4 + int(tex.pos.x)*4
+
+		for x := 0; x < newWidth; x++ {
+			fx := float32(x) / float32(newWidth) * float32(tex.w-1)
+			screenX := int(fx*scaleX) + int(tex.pos.x)
+			if screenX >= 0 && screenX < winWidth && screenY >= 0 && screenY < winHeight {
+				fxi4 := int(fx) * 4
+				//fmt.Println("iteration", x, fyi*texW4+fxi4, "/", len(tex.pixels))
+				pixels[screenIndex] = tex.pixels[fyi*texW4+fxi4]
+				screenIndex++
+				pixels[screenIndex] = tex.pixels[fyi*texW4+fxi4+1]
+				screenIndex++
+				pixels[screenIndex] = tex.pixels[fyi*texW4+fxi4+2]
+				screenIndex++
+				screenIndex++ //skip alpha channel
+			}
+		}
+	}
+
 }
 
 // see https://en.wikipedia.org/wiki/Alpha_compositing
@@ -120,7 +151,7 @@ func loadImage(imgpath string) *texture {
 			imgIndex++
 		}
 	}
-	return &texture{pos{0, 0}, 1, imgPixels, w, h, w * 4}
+	return &texture{pos{0, 0}, 1, imgPixels, w, h, w * 4, float32(1)}
 }
 
 func clear(pixels []byte) {
@@ -193,7 +224,8 @@ func main() {
 			}
 			sprite.pos.x = sprite.pos.x + float32(sprite.direction)*(speed)
 
-			sprite.drawWithAlphaBlending(pixels)
+			//sprite.drawWithAlphaBlending(pixels)
+			sprite.drawScaled(float32(1+i), float32(1+i), pixels)
 		}
 
 		tex.Update(nil, pixels, winWidth*4)
